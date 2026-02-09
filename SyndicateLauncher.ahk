@@ -10,7 +10,8 @@
 
 ; DO NOT EDIT THOSE
 global sWinTitleErrorPopup := "Syndicate.exe -" ; normally "Syndicate.exe - Application Error" but we omit the last part for non-English Windows
-global sWinTitleGame := "ahk_class MOS Win32/D3D9.x ahk_exe Syndicate.exe"
+global sWinTitleGame := "ahk_class MOS Win32/D3D9.x ahk_exe Syndicate.exe" ; Game window
+global sWinTitleSplash := "ahk_class #32770 ahk_exe Syndicate.exe" ; Splash screen
 
 ; How many times we should try running the game (run the script multiple times or increase this value if the game still doesn't run)
 global g_nAttempts := 50
@@ -60,7 +61,7 @@ ReadConfigfile()
         catch
             g_nAttempts := 50
 
-        try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 50)
+        try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 1)
         catch
             g_nTimeBetweenAttempts := 50
 
@@ -75,9 +76,7 @@ RunGame()
     ; Game is already running, just activate it
     if (WinExist(sWinTitleGame))
     {
-        if (MsgBox("The game is already running, would you like to activate it?", "Syndicate Launcher", 4) == "Yes")
-            WinActivate(sWinTitleGame)
-
+        WinActivate(sWinTitleGame)
         ExitApp()
     }
 
@@ -100,10 +99,14 @@ RunGame()
     {
         Output("Attempt " A_Index " to launch the game")
 
-        if (!g_bUseRunWait && !WinExist(sWinTitleGame))
+        if (!g_bUseRunWait && !WinExist(sWinTitleSplash))
         {
             try Run(g_sExePath)
             Sleep(g_nTimeBetweenAttempts)
+
+            ; The game ran successfully, stop trying
+            if (WinExist(sWinTitleSplash))
+                break
         }
         else if (g_bUseRunWait)
         {

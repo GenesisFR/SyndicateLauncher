@@ -29,8 +29,8 @@ RunGame()
 ; Display an error message and exit
 ExitWithErrorMessage(p_sErrorMessage)
 {
-	MsgBox(p_sErrorMessage, "Error", 16)
-	ExitApp(1)
+    MsgBox(p_sErrorMessage, "Error", 16)
+    ExitApp(1)
 }
 
 Output(p_sMessage)
@@ -56,16 +56,16 @@ ReadConfigfile()
     }
     finally
     {
-        ; Enforce default values in case they're too low or types are incorrect
+        ; Enforce default values in case they're incorrect
         try g_nAttempts := Max(g_nAttempts, 1)
-        catch
+        catch ; not an integer
             g_nAttempts := 50
 
         try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 1)
-        catch
+        catch ; not an integer
             g_nTimeBetweenAttempts := 50
 
-        g_bUseRunWait := g_bUseRunWait = true ? true : false
+        g_bUseRunWait := g_bUseRunWait = true ? true : false ; 0 or 1
     }
 }
 
@@ -106,7 +106,10 @@ RunGame()
 
             ; The game ran successfully, stop trying
             if (WinExist(sWinTitleSplash))
+            {
+                Output("Splash window detected")
                 break
+            }
         }
         else if (g_bUseRunWait)
         {
@@ -125,21 +128,25 @@ RunGame()
     ; Wait a bit before closing pop-ups
     if (!g_bUseRunWait)
     {
-        Output("Finished launching attempts, waiting for the game window to become active")
-        if (!WinWaitActive(sWinTitleGame, , 5))
+        Output("Waiting for the game window to exist")
+
+        if (!WinWait(sWinTitleGame, , 5))
             Output("Timeout reached")
     }
 
-    ; Close all existing error pop-ups
     Output("Closing all existing error pop-ups")
+    local l_nMaxLoops := Max(g_nAttempts, 200)
+
+    ; Close all existing error pop-ups
     while (WinExist(sWinTitleErrorPopup))
     {
         Output("Closing error pop-up number " A_Index)
-        WinClose() ; Use last found window
+        WinClose() ; Use the last found window
         ;PostMessage(0x0112, 0xF060) ; 0x0112 = WM_SYSCOMMAND, 0xF060 = SC_CLOSE
+        ;WinKill()
 
         ; Prevent infinite loop in case WinClose() did nothing
-        if (A_Index > 200)
+        if (A_Index > l_nMaxLoops)
         {
             Output("Reached maximum loop count, exiting")
             break

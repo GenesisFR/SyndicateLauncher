@@ -110,7 +110,7 @@ RunGame()
 	{
 		Output("Waiting for the game window to exist")
 
-		if (!WinWait(sWinTitleGame, , 5))
+		if (!WinWait(sWinTitleGame, , 30))
 			Output("Timeout reached")
 	}
 

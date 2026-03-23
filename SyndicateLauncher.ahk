@@ -29,127 +29,119 @@ RunGame()
 ; Display an error message and exit
 ExitWithErrorMessage(p_sErrorMessage)
 {
-    MsgBox(p_sErrorMessage, "Error", 16)
-    ExitApp(1)
+	MsgBox(p_sErrorMessage, "Error", 16)
+	ExitApp(1)
 }
 
 Output(p_sMessage)
 {
-    OutputDebug(p_sMessage "`n")
+	OutputDebug(p_sMessage "`n")
 }
 
 ReadConfigfile()
 {
-    global
-    local l_sConfigFileName := "SyndicateLauncher.ini"
+	global
 
-    try
-    {
-        g_nAttempts            := IniRead(l_sConfigFileName, "General", "attempts",            50)
-        g_nTimeBetweenAttempts := IniRead(l_sConfigFileName, "General", "timeBetweenAttempts", 50)
-        g_sExePath             := IniRead(l_sConfigFileName, "General", "exePath",             A_WorkingDir "\Syndicate.exe")
-        g_bUseRunWait          := IniRead(l_sConfigFileName, "General", "useRunWait",          false)
-    }
-    catch
-    {
-        Output(l_sConfigFileName " is missing, using default values")
-    }
-    finally
-    {
-        ; Enforce default values in case they're incorrect
-        try g_nAttempts := Max(g_nAttempts, 1)
-        catch ; not an integer
-            g_nAttempts := 50
+	local l_sConfigFileName := "SyndicateLauncher.ini"
 
-        try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 1)
-        catch ; not an integer
-            g_nTimeBetweenAttempts := 50
+	g_nAttempts            := IniRead(l_sConfigFileName, "General", "attempts",            50)
+	g_nTimeBetweenAttempts := IniRead(l_sConfigFileName, "General", "timeBetweenAttempts", 50)
+	g_sExePath             := IniRead(l_sConfigFileName, "General", "exePath",             A_WorkingDir "\Syndicate.exe")
+	g_bUseRunWait          := IniRead(l_sConfigFileName, "General", "useRunWait",          false)
 
-        g_bUseRunWait := g_bUseRunWait = true ? true : false ; 0 or 1
-    }
+	; Enforce default values in case they're incorrect
+	try g_nAttempts := Max(g_nAttempts, 1)
+	catch ; not an integer
+		g_nAttempts := 50
+
+	try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 1)
+	catch ; not an integer
+		g_nTimeBetweenAttempts := 50
+
+	g_bUseRunWait := g_bUseRunWait = true ? true : false ; 0 or 1
 }
 
 RunGame()
 {
-    global
+	global
 
-    ; Game is already running, just activate it
-    if (WinExist(sWinTitleGame))
-    {
-        WinActivate(sWinTitleGame)
-        ExitApp()
-    }
+	; Game is already running, just activate it
+	if (WinExist(sWinTitleGame))
+	{
+		WinActivate(sWinTitleGame)
+		return
+	}
 
-    ; If the user somehow forgot to include the executable name in the path, we do it for them
-    if (FileExist(g_sExePath) == "D")
-        g_sExePath := RTrim(g_sExePath, "\") "\Syndicate.exe"
+	; If the user somehow forgot to include the executable name in the path, we do it for them
+	if (FileExist(g_sExePath) == "D")
+		g_sExePath := RTrim(g_sExePath, "\") "\Syndicate.exe"
 
-    ; Search in the current directory if the executable doesn't exist
-    if (!FileExist(g_sExePath))
-    {
-        g_sExePath := A_WorkingDir "\Syndicate.exe"
+	; Search in the current directory if the executable doesn't exist
+	if (!FileExist(g_sExePath))
+	{
+		g_sExePath := A_WorkingDir "\Syndicate.exe"
 
-        if (!FileExist(g_sExePath))
-            ExitWithErrorMessage(g_sExePath " not found! The script will now exit.")
-    }
+		if (!FileExist(g_sExePath))
+			ExitWithErrorMessage(g_sExePath " not found! The script will now exit.")
+	}
 
-    ; Try to run the game multiple times
-    Output("Attempting to launch the game " g_nAttempts " times")
-    loop g_nAttempts
-    {
-        Output("Attempt " A_Index " to launch the game")
+	; Try to run the game multiple times
+	Output("Attempting to launch the game " g_nAttempts " times")
+	loop g_nAttempts
+	{
+		Output("Attempt " A_Index " to launch the game")
 
-        if (!g_bUseRunWait && !WinExist(sWinTitleSplash))
-        {
-            try Run(g_sExePath)
-            Sleep(g_nTimeBetweenAttempts)
+		if (!g_bUseRunWait && !WinExist(sWinTitleSplash))
+		{
+			try Run(g_sExePath)
+			Sleep(g_nTimeBetweenAttempts)
 
-            ; The game ran successfully, stop trying
-            if (WinExist(sWinTitleSplash))
-            {
-                Output("Splash window detected")
-                break
-            }
-        }
-        else if (g_bUseRunWait)
-        {
-            local l_errCode := -1
-            try l_errCode := RunWait(g_sExePath)
+			; The game ran successfully, stop trying
+			if (WinExist(sWinTitleSplash))
+			{
+				Output("Splash window detected")
+				break
+			}
+		}
+		else if (g_bUseRunWait)
+		{
+			local l_errCode := -1
+			try l_errCode := RunWait(g_sExePath)
 
-            ; The game closed after a successful run, stop trying
-            if (l_errCode == 0)
-            {
-                Output("The game closed after running successfully")
-                break
-            }
-        }
-    }
+			; The game closed after a successful run, stop trying
+			if (l_errCode == 0)
+			{
+				Output("The game closed after running successfully")
+				break
+			}
+		}
+	}
 
-    ; Wait a bit before closing pop-ups
-    if (!g_bUseRunWait)
-    {
-        Output("Waiting for the game window to exist")
+	; Wait a bit before closing pop-ups
+	if (!g_bUseRunWait)
+	{
+		Output("Waiting for the game window to exist")
 
-        if (!WinWait(sWinTitleGame, , 5))
-            Output("Timeout reached")
-    }
+		if (!WinWait(sWinTitleGame, , 5))
+			Output("Timeout reached")
+	}
 
-    Output("Closing all existing error pop-ups")
-    local l_nMaxLoops := Max(g_nAttempts, 200)
+	Output("Closing all existing error pop-ups")
+	local l_nMaxLoops := Max(g_nAttempts, 200)
 
-    ; Close all existing error pop-ups
-    while (WinExist(sWinTitleErrorPopup))
-    {
-        Output("Closing error pop-up number " A_Index)
-        WinClose() ; Use the last found window
-        ;PostMessage(0x0112, 0xF060) ; 0x0112 = WM_SYSCOMMAND, 0xF060 = SC_CLOSE
-        ;WinKill()
+	; Close all existing error pop-ups
+	while (WinExist(sWinTitleErrorPopup))
+	{
+		Output("Closing error pop-up number " A_Index)
+		WinClose() ; Use the last found window
+		;PostMessage(0x0112, 0xF060) ; 0x0112 = WM_SYSCOMMAND, 0xF060 = SC_CLOSE
+		;WinKill()
 
-        ; Prevent infinite loop in case WinClose() did nothing
-        if (A_Index > l_nMaxLoops)
-        {
-            Output("Reached maximum loop count, exiting")
-            break
-        }
-    }
+		; Prevent infinite loop in case WinClose() did nothing
+		if (A_Index > l_nMaxLoops)
+		{
+			Output("Reached maximum loop count, exiting")
+			break
+		}
+	}
 }

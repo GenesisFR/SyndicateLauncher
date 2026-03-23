@@ -13,16 +13,6 @@ global sWinTitleErrorPopup := "Syndicate.exe -" ; normally "Syndicate.exe - Appl
 global sWinTitleGame := "ahk_class MOS Win32/D3D9.x ahk_exe Syndicate.exe" ; Game window
 global sWinTitleSplash := "ahk_class #32770 ahk_exe Syndicate.exe" ; Splash screen
 
-; How many times we should try running the game (run the script multiple times or increase this value if the game still doesn't run)
-global g_nAttempts := 50
-; How many milliseconds to wait between each running attempt
-global g_nTimeBetweenAttempts := 50
-; The full path to Syndicate.exe, it'll fall back to the current directory if not found
-global g_sExePath := A_WorkingDir "\Syndicate.exe"
-; Wait for the game process to close between each unsuccessful attempt (the game will take much longer to launch and any potential error pop-up
-; won't be closed until after the game closes)
-global g_bUseRunWait := false
-
 ReadConfigfile()
 RunGame()
 
@@ -47,7 +37,7 @@ ReadConfigfile()
 	g_nAttempts            := IniRead(l_sConfigFileName, "General", "attempts",            50)
 	g_nTimeBetweenAttempts := IniRead(l_sConfigFileName, "General", "timeBetweenAttempts", 50)
 	g_sExePath             := IniRead(l_sConfigFileName, "General", "exePath",             A_WorkingDir "\Syndicate.exe")
-	g_bUseRunWait          := IniRead(l_sConfigFileName, "General", "useRunWait",          false)
+	g_bUseRunWait          := IniRead(l_sConfigFileName, "General", "useRunWait",          false) == true
 
 	; Enforce default values in case they're incorrect
 	try g_nAttempts := Max(g_nAttempts, 1)
@@ -57,8 +47,6 @@ ReadConfigfile()
 	try g_nTimeBetweenAttempts := Max(g_nTimeBetweenAttempts, 1)
 	catch ; not an integer
 		g_nTimeBetweenAttempts := 50
-
-	g_bUseRunWait := g_bUseRunWait = true ? true : false ; 0 or 1
 }
 
 RunGame()
